@@ -1,4 +1,4 @@
-package com.achobeta.themis.domain.user.service.impl;
+package com.achobeta.themis.domain.laws.service.impl;
 
 import cn.hutool.json.JSONUtil;
 import com.achobeta.themis.common.agent.service.IAiKnowledgeService;
@@ -11,11 +11,11 @@ import com.achobeta.themis.domain.laws.model.entity.KnowledgeBaseReviewDTO;
 import com.achobeta.themis.domain.laws.model.entity.KnowledgeBaseSearchHistory;
 import com.achobeta.themis.domain.chat.model.entity.QuestionRegulationRelations;
 import com.achobeta.themis.domain.chat.model.entity.Questions;
-import com.achobeta.themis.domain.user.model.vo.KnowledgeBaseQueryResponseVO;
-import com.achobeta.themis.domain.user.model.vo.KnowledgeQueryRequestVO;
+import com.achobeta.themis.domain.laws.model.vo.KnowledgeBaseQueryResponseVO;
+import com.achobeta.themis.domain.laws.model.vo.KnowledgeQueryRequestVO;
 import com.achobeta.themis.domain.laws.repo.IKnowledgeBaseRepository;
-import com.achobeta.themis.domain.user.service.IKnowledgeBaseService;
-import com.achobeta.themis.domain.user.service.IKnowledgeQueryService;
+import com.achobeta.themis.domain.laws.service.IKnowledgeBaseService;
+import com.achobeta.themis.domain.laws.service.IKnowledgeQueryService;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.RequiredArgsConstructor;
