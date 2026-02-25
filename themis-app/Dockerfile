@@ -11,4 +11,4 @@ COPY --from=builder /app/extracted/dependencies/ ./
 COPY --from=builder /app/extracted/spring-boot-loader/ ./
 COPY --from=builder /app/extracted/snapshot-dependencies/ ./
 COPY --from=builder /app/extracted/application/ ./
-ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "org.springframework.boot.loader.launch.JarLauncher"]
+ENTRYPOINT ["java", "-cp", ".", "-XX:MaxRAMPercentage=75", "org.springframework.boot.loader.launch.JarLauncher"]
