@@ -22,7 +22,6 @@ public class Constant {
     public static final String APP = "dgut-themis";
     //public static final String APP = "dgut-weave";
 
-    // 系统文件路径 （Windows 下） #TODO Linux下需要修改
     public static final String[] SYSTEM_FONTS = {
             "themis-common\\src\\main\\resources\\fronts\\simsun.ttc",
             "C:\\Windows\\Fonts\\simsun.ttc",
@@ -41,7 +40,6 @@ public class Constant {
 
 
 
-    // 个性化的系统提示词 TODO
 
     // 问题-法律-热点-场景
     public static final String KNOWLEDGE_BASE_INSERT_SYSTEM_PROMPT = "你是一个信息填充机器人，你的任务是根据userQuestion和与问题相关的法律文件列表的regulationID，regulationContent，填充出JSON格式数据。" +
@@ -67,29 +65,6 @@ public class Constant {
             "}";
 
 
-    // 知识库查询默认返回
-    public static final String KNOWLEDGE_DEFAULT_RESPONSE = "{\n" +
-            "  \"topic\": \"\",\n" +
-            "  \"caseBackground\": \"\",\n" +
-            "  \"regulationList\": [\n" +
-            "    {\n" +
-            "      \"regulationID\": ,\n" +
-            "      \"aiTranslation\": \"\",\n" +
-            "      \"relevantCases\": [\n" +
-            "        {\n" +
-            "          \"caseContent\": \"\",\n" +
-            "          \"caseLink\": \"\"\n" +
-            "        }\n" +
-            "      ],\n" +
-            "      \"relevantQuestions\": [\n" +
-            "        \"\"\n" +
-            "      ],\n" +
-            "      \"relatedRegulationList\": [\n" +
-            "        \"\"\n" +
-            "      ]\n" +
-            "    }\n" +
-            "  ]\n" +
-            "}";
 
     /**
      * {
