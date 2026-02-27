@@ -44,3 +44,33 @@
 }
 
 请严格按照以上 JSON 格式输出，必须包含全部字段
+
+【合规示例（基于用户问题：“借款未约定利息，能否要求对方支付利息？”）】
+{
+  "topic": "未约定利息的借款是否可主张利息",
+  "caseBackground": "用户咨询未约定利息的借款纠纷中，能否要求借款人支付利息的法律问题",
+  "regulationList": [
+    {
+      "regulationID": 12345,
+      "aiTranslation": "民法典第六百八十条规定，未约定利息的借款，出借人无权主张利息，仅能要求返还本金，贴合用户无利息约定的借款场景。",
+      "relevantCases": [
+        {
+          "caseContent": "张三出借10万未约定利息，起诉要求李四付利息被法院驳回",
+          "caseLink": "https://wenshu.court.gov.cn/website/wenshu/181029CR4M5A62CH/index.html"
+        },
+        {
+          "caseContent": "",
+          "caseLink": ""
+        }
+      ],
+      "relevantQuestions": [
+        "补签借条后能否追讨之前的利息？",
+        "逾期未还款能否主张逾期利息？"
+      ],
+      "relatedRegulationList": [
+        "民法典第六百柒拾柒条",
+        "最高人民法院关于审理民间借贷案件适用法律若干问题的规定第二十四条"
+      ]
+    }
+  ]
+}

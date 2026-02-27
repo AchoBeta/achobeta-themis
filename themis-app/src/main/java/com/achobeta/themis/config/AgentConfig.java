@@ -6,6 +6,7 @@ import com.achobeta.themis.common.agent.tool.MeilisearchTool;
 import com.achobeta.themis.common.agent.tool.TavilyTool;
 import com.achobeta.themis.common.agent.service.IAiChatService;
 import com.achobeta.themis.infrastructure.chat.redis.RedisChatMemoryStore;
+import dev.langchain4j.mcp.McpToolProvider;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
@@ -33,6 +34,8 @@ public class AgentConfig {
     private MeilisearchTool meilisearchTool;
     @Autowired
     private TavilyTool tavilyTool;
+//    @Autowired
+//    private McpToolProvider tavilyMcpToolProvider;
 
 
 
@@ -55,18 +58,18 @@ public class AgentConfig {
         return AiServices.builder(IAiChatService.class)
                 .streamingChatModel(model)
                 .chatMemoryProvider(conversationId ->{
-                      MessageWindowChatMemory memory = MessageWindowChatMemory.builder()
-                              .chatMemoryStore(redisChatMemoryStore)
-                              .id(conversationId)
-                              .maxMessages(100)
-                              .build();
+                    MessageWindowChatMemory memory = MessageWindowChatMemory.builder()
+                            .chatMemoryStore(redisChatMemoryStore)
+                            .id(conversationId)
+                            .maxMessages(100)
+                            .build();
 
-                      boolean hasSystemMessage = memory.messages().stream()
-                              .anyMatch(msg -> msg instanceof SystemMessage);
-                      if (!hasSystemMessage) {
-                          memory.add(systemMessage);
-                      }
-                      return memory;
+                    boolean hasSystemMessage = memory.messages().stream()
+                            .anyMatch(msg -> msg instanceof SystemMessage);
+                    if (!hasSystemMessage) {
+                        memory.add(systemMessage);
+                    }
+                    return memory;
                 })
                 .tools(tavilyTool)  // 添加网络搜索工具，使 AI 具备联网能力
                 .build();
@@ -79,13 +82,13 @@ public class AgentConfig {
         String systemPrompt = resource.getContentAsString(StandardCharsets.UTF_8);
         log.info("成功加载系统提示词，长度: {} 字符", systemPrompt.length());
         SystemMessage systemMessage = SystemMessage.from(systemPrompt);
-        
+
         OpenAiChatModel model = OpenAiChatModel.builder()
                 .baseUrl(agentConfigProperties.getBaseUrl())
                 .apiKey(agentConfigProperties.getApiKey())
                 .modelName(agentConfigProperties.getModel())
-                .logRequests(true)
-                .logResponses(true)
+                //.logRequests(true)
+                //.logResponses(true)
                 .build();
         return AiServices.builder(IAiKnowledgeService.class)
                 .chatModel(model)
@@ -103,6 +106,7 @@ public class AgentConfig {
                     return memory;
                 })
                 .tools(tavilyTool)  // 添加网络搜索工具
+                //.toolProvider(tavilyMcpToolProvider)  // TODO 待测
                 .build();
     }
     @Bean("adjudicator")
@@ -111,7 +115,7 @@ public class AgentConfig {
         String systemPrompt = resource.getContentAsString(StandardCharsets.UTF_8);
         log.info("成功加载系统提示词，长度: {} 字符", systemPrompt.length());
         SystemMessage systemMessage = SystemMessage.from(systemPrompt);
-        
+
         OpenAiChatModel model = OpenAiChatModel.builder()
                 .baseUrl(agentConfigProperties.getBaseUrl())
                 .apiKey(agentConfigProperties.getApiKey())
@@ -138,7 +142,7 @@ public class AgentConfig {
                 })
                 .tools(meilisearchTool, tavilyTool)  // 同时支持知识库搜索和网络搜索
                 .build();
-        }
+    }
 
 
 

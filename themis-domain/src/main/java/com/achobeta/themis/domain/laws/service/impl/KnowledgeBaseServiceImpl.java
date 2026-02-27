@@ -17,6 +17,7 @@ import com.achobeta.themis.domain.laws.repo.IKnowledgeBaseRepository;
 import com.achobeta.themis.domain.laws.service.IKnowledgeBaseService;
 import com.achobeta.themis.domain.laws.service.IKnowledgeQueryService;
 import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONException;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -59,7 +60,7 @@ public class KnowledgeBaseServiceImpl implements IKnowledgeBaseService {
      * @return
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    //@Transactional(rollbackFor = Exception.class)
     public List<KnowledgeBaseQueryResponseVO> query(String userQuestion) {
         Long currentUserId = (Long) ((Map<String, Object>) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).get("id");
         threadPoolTaskExecutor.execute(() -> {
@@ -110,23 +111,46 @@ public class KnowledgeBaseServiceImpl implements IKnowledgeBaseService {
                     throw new BusinessException("未找到相关法律");
                 }
                 String prompt = buildKnowledgePrompt(userQuestion, knowledgeIdAndContent);
-                String response = knowledgeAgentService.chat(UUID.randomUUID().toString(), prompt);
-                log.warn("ai返回结果: {}", response);
+                // 给3次机会尝试让ai正确输入、有问题便返回空给前端
+                String response = null;
+                List<KnowledgeBaseQueryResponseVO> knowledgeBaseQueryResponseVOS = null;
+                int cnt = 3;
+                while (cnt > 0) {
+                    if(cnt < 3) response = knowledgeAgentService.chat(UUID.randomUUID().toString(), prompt);
+                    else response = knowledgeAgentService.chat(UUID.randomUUID().toString(), prompt + "; 先前的json响应格式有误，请认真核对系统提示中的json要求");
+                    // 检查json合规
+                    Boolean flag = true;
+                    try {
+                        knowledgeBaseQueryResponseVOS = parseJsonAndSearchDataToKnowledgeBaseQueryResponseVO(response, userQuestion);
+                    } catch (JSONException e) {
+                        log.warn("大模型返回json字符串无法解析{}", response);
+                        flag = false;
+                    }
+                    if(flag) break;
+                    cnt--;
+                }
+                if(cnt == 0){
+                    List<KnowledgeBaseQueryResponseVO> defaultResp = new ArrayList<>();
+                    defaultResp.add(new KnowledgeBaseQueryResponseVO());
+                    return defaultResp;
+                }
+                //log.warn("ai返回结果: {}", response);
                 // 异步插入数据
                 // 获得自己的代理对象
                 KnowledgeBaseServiceImpl knowledgeBaseServiceProxy = (KnowledgeBaseServiceImpl) AopContext.currentProxy();
+                final String resp = response;
                 threadPoolTaskExecutor.execute(() -> {
-                    knowledgeBaseServiceProxy.insertKnowledgeBaseData(userQuestion, response);
+                    knowledgeBaseServiceProxy.insertKnowledgeBaseData(userQuestion, resp);
                 });
                 // 根据ai的信息封装返回结果
-                return parseJsonAndSearchDataToKnowledgeBaseQueryResponseVO(response, userQuestion);
+                return knowledgeBaseQueryResponseVOS;
             }
         }
         List<Long> regulationIds = knowledgeBaseRepository.findRegulationIdsByQuestionId(questionId);
         Long questionIdForSearch = questionId;
         return regulationIds.stream().map(regulationId ->{
             KnowledgeBaseReviewDTO knowledgeBaseReviewDTO = knowledgeBaseRepository.findKnowledgeBaseReviewDetailsById(regulationId, questionIdForSearch);
-                        return knowledgeBaseBaseReviewToKnowledgeBaseQueryResponseVO(knowledgeBaseReviewDTO, regulationId.intValue());
+            return knowledgeBaseBaseReviewToKnowledgeBaseQueryResponseVO(knowledgeBaseReviewDTO, regulationId.intValue());
         }).collect(Collectors.toList());
     }
 
@@ -228,13 +252,14 @@ public class KnowledgeBaseServiceImpl implements IKnowledgeBaseService {
      * @return
      */
     private List<KnowledgeBaseQueryResponseVO> parseJsonAndSearchDataToKnowledgeBaseQueryResponseVO(String JSONStr, String userQuestion) {
+        List<KnowledgeBaseQueryResponseVO> collect = null;
         JSONObject jsonObject = JSONObject.parseObject(JSONStr);
         JSONArray regulationArray = jsonObject.getJSONArray("regulationList");
         if (regulationArray == null || regulationArray.isEmpty()) {
             log.info("问题{}未关联任何法律", userQuestion);
             return null;
         }
-        return regulationArray.stream()
+        collect = regulationArray.stream()
                 .map(regulation -> JSONObject.parseObject(regulation.toString()))
                 .map(regulation -> {
                     Long regulationID = regulation.getLong("regulationID");
@@ -253,7 +278,8 @@ public class KnowledgeBaseServiceImpl implements IKnowledgeBaseService {
                             .issueYear(knowledgeBaseReviewDTO.getIssueYear())
                             .build();
                 })
-                .collect(Collectors.toList());
+                .toList();
+        return collect;
     }
 
     /**
@@ -277,48 +303,6 @@ public class KnowledgeBaseServiceImpl implements IKnowledgeBaseService {
                 .issueYear(knowledgeBaseReviewDTO.getIssueYear())
                 .build();
     }
-
-    /** 期望ai返回的json字符串格式
-     * {
-     *      "topic": "",
-     *      "caseBackground": "",
-     *      "regulationList": [
-     *          {
-     *              "regulationID": 1,
-     *              "aiTranslation": "",
-     *              "relevantCases": [
-     *                  {
-     *                      "caseContent": "",
-     *                      "caseLink": ""
-     *                  },
-     *                  {
-     *                      "caseContent": "",
-     *                      "caseLink": ""
-     *                  }
-     *              ],
-     *              "relevantQuestions": [
-     *                  "相关问题1",
-     *                  "相关问题2"
-     *              ]
-     *          },
-     *          {
-     *              "regulationID": 2,
-     *              "aiTranslation": "",
-     *              "relevantCases": [
-     *                    {
-     *                        "caseContent": "",
-     *                        "caseLink": ""
-     *                    }
-     *                ],
-     *              "relevantQuestions": [
-     *                   "相关问题1",
-     *                   "相关问题2"
-     *              ]
-     *          }
-     *      ]
-     *
-     * }
-     */
 
     /**
      * 构建审核提示
@@ -406,4 +390,3 @@ public class KnowledgeBaseServiceImpl implements IKnowledgeBaseService {
                 .collect(Collectors.toList());
     }
 }
-
